@@ -21,11 +21,22 @@ function loadProfile() {
 
     const text = document.getElementById("profileInput").value;
 
-   
-    const profile = JSON.parse(text);
+    // FIX 1: Wrap JSON.parse in try/catch to handle malformed input safely
+    let profile;
+    try {
+        profile = JSON.parse(text);
+    } catch (e) {
+        alert("Invalid JSON input.");
+        return;
+    }
+
+    // FIX 2: Validate that expected fields exist and are the correct type
+    if (typeof profile.username !== "string" || !Array.isArray(profile.notifications)) {
+        alert("Invalid profile structure.");
+        return;
+    }
 
     currentProfile = profile;
-
     renderProfile(profile);
 }
 
@@ -36,8 +47,8 @@ function loadProfile() {
 
 function renderProfile(profile) {
 
-    
-    document.getElementById("username").innerHTML = profile.username;
+    // FIX 3: Use textContent instead of innerHTML to prevent XSS
+    document.getElementById("username").textContent = profile.username;
 
     const list = document.getElementById("notifications");
     list.innerHTML = "";
@@ -46,8 +57,8 @@ function renderProfile(profile) {
 
         const li = document.createElement("li");
 
-        
-        li.innerHTML = n;
+        // FIX 3 (continued): Use textContent instead of innerHTML to prevent XSS
+        li.textContent = n;
 
         list.appendChild(li);
     }
@@ -59,7 +70,9 @@ function renderProfile(profile) {
 -------------------------- */
 
 function saveSession() {
-    localStorage.setItem("profile", JSON.stringify(currentProfile));
+    // FIX 4: Use sessionStorage instead of localStorage — session data should
+    // not persist beyond the current browser session
+    sessionStorage.setItem("profile", JSON.stringify(currentProfile));
 
     alert("Session saved");
 }
@@ -67,14 +80,28 @@ function saveSession() {
 
 function loadSession() {
 
-    const stored = localStorage.getItem("profile");
+    // FIX 4 (continued): Read from sessionStorage to match saveSession
+    const stored = sessionStorage.getItem("profile");
 
     if (stored) {
 
-        const profile = JSON.parse(stored);
+        // FIX 5: Wrap in try/catch — stored data is attacker-controlled
+        // and cannot be trusted
+        let profile;
+        try {
+            profile = JSON.parse(stored);
+        } catch (e) {
+            alert("Corrupted session data.");
+            return;
+        }
+
+        // FIX 5 (continued): Re-validate structure after loading from storage
+        if (typeof profile.username !== "string" || !Array.isArray(profile.notifications)) {
+            alert("Invalid session data.");
+            return;
+        }
 
         currentProfile = profile;
-
         renderProfile(profile);
     }
 }
